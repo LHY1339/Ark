@@ -5,6 +5,8 @@
 #include "Ark/Object/MainPlayerObject.h"
 #include "MainCharacter.generated.h"
 
+class UBoxComponent;
+class UUW_MainPlayer;
 class ULimitComponent;
 class AMainGameStateBase;
 class USpringArmComponent;
@@ -33,9 +35,13 @@ public:
 	void Input_RunPress();
 	void Input_RunRelease();
 	void Input_CrouchPress();
+	void Input_InteractPress();
 
 	//Custom
 	FAnimVariable GetAnimVariable();
+
+	bool AddInteractActor(AActor* NewActor);
+	void RemoveInteractActor(AActor* Actor);
 
 private:
 	//Init
@@ -45,6 +51,7 @@ private:
 
 	//BeginPlay
 	void Begin_Bind();
+	void Begin_Widget();
 
 	//Tick
 	void Tick_Calculate(float DeltaTime);
@@ -61,9 +68,30 @@ private:
 	UFUNCTION(Server, Unreliable)
 	void UpdateVariable_Server(FUpdateVariable Var);
 
+	UFUNCTION(Server, Unreliable)
+	void Interact_Server(AActor* InteractActor);
+
 	//Reflection
 	UFUNCTION()
 	void OnRep_Crouch();
+
+	UFUNCTION()
+	void Box_Interact_BeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
+
+	UFUNCTION()
+	void Box_Interact_EndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex
+	);
 
 public:
 	//Components
@@ -80,7 +108,14 @@ public:
 	USpringArmComponent* SpringArm_First;
 
 	UPROPERTY(EditDefaultsOnly)
+	UStaticMeshComponent* StaticMesh_Interact;
+
+	UPROPERTY(EditDefaultsOnly)
 	ULimitComponent* Limit_Speed;
+
+	//Blueprint
+	UPROPERTY(EditDefaultsOnly, Category="Class")
+	TSubclassOf<UUW_MainPlayer> MainPlayerWidgetClass;
 
 	//Movement
 	UPROPERTY(Replicated)
@@ -107,9 +142,21 @@ public:
 	UPROPERTY(Replicated)
 	bool Rep_UseSmooth = false;
 
-	bool CanMove = true;
-	bool CanTurn = true;
-
 	UPROPERTY()
 	AMainGameStateBase* GameState;
+
+	UPROPERTY()
+	UUW_MainPlayer* MainPlayerWidget;
+
+	UPROPERTY()
+	TArray<AActor*> InteractList;
+
+	UPROPERTY(Replicated)
+	TArray<AActor*> PickUpList;
+
+	UPROPERTY(Replicated)
+	TArray<AActor*> WeaponList;
+
+	bool CanMove = true;
+	bool CanTurn = true;
 };

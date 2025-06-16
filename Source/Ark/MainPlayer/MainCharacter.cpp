@@ -1,14 +1,17 @@
 #include "MainCharacter.h"
 
 #include "MainGameStateBase.h"
+#include "Ark/Interface/IInteract.h"
 #include "Camera/CameraComponent.h"
 #include "Component/LimitComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Widget/UW_MainPlayer.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -31,6 +34,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AMainCharacter::Input_JumpPress);
 	InputComponent->BindAction("Jump", IE_Released, this, &AMainCharacter::Input_JumpRelease);
 	InputComponent->BindAction("Crouch", IE_Pressed, this, &AMainCharacter::Input_CrouchPress);
+	InputComponent->BindAction("Interact", IE_Pressed, this, &AMainCharacter::Input_InteractPress);
 }
 
 void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -45,12 +49,15 @@ void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION(AMainCharacter, Rep_Rotation, COND_SkipOwner)
 	DOREPLIFETIME_CONDITION(AMainCharacter, Rep_Crouch, COND_SkipOwner)
 	DOREPLIFETIME(AMainCharacter, Rep_UseSmooth)
+	DOREPLIFETIME(AMainCharacter, PickUpList)
+	DOREPLIFETIME(AMainCharacter, WeaponList)
 }
 
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	Begin_Bind();
+	Begin_Widget();
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -141,6 +148,19 @@ void AMainCharacter::Input_CrouchPress()
 	SetCrouch(!Rep_Crouch);
 }
 
+void AMainCharacter::Input_InteractPress()
+{
+	for (AActor* cur_actor : InteractList)
+	{
+		if (!IIInteract::Execute_GetCanInteract(cur_actor, this))
+		{
+			continue;
+		}
+		Interact_Server(cur_actor);
+		return;
+	}
+}
+
 void AMainCharacter::Init_Default()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -162,6 +182,9 @@ void AMainCharacter::Init_Component()
 	Camera_First = CreateDefaultSubobject<UCameraComponent>("Camera_First");
 	Camera_First->SetupAttachment(SpringArm_First);
 
+	StaticMesh_Interact = CreateDefaultSubobject<UStaticMeshComponent>("Box_Interact");
+	StaticMesh_Interact->SetupAttachment(RootComponent);
+
 	Limit_Speed = CreateDefaultSubobject<ULimitComponent>("Limit_Speed");
 }
 
@@ -169,10 +192,32 @@ void AMainCharacter::Init_Value()
 {
 	Limit_Speed->LimitList.Add({600.0f, "Run"});
 	Limit_Speed->LimitList.Add({400.0f, "Jog"});
+
+	PickUpList.Init(nullptr, 4);
+	WeaponList.Init(nullptr, 2);
 }
 
 void AMainCharacter::Begin_Bind()
 {
+	StaticMesh_Interact->OnComponentBeginOverlap.AddDynamic(this, &AMainCharacter::Box_Interact_BeginOverlap);
+	StaticMesh_Interact->OnComponentEndOverlap.AddDynamic(this, &AMainCharacter::Box_Interact_EndOverlap);
+}
+
+void AMainCharacter::Begin_Widget()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (MainPlayerWidgetClass)
+	{
+		MainPlayerWidget = CreateWidget<UUW_MainPlayer>(GetWorld(), MainPlayerWidgetClass);
+		if (MainPlayerWidget)
+		{
+			MainPlayerWidget->AddToViewport(0);
+		}
+	}
 }
 
 void AMainCharacter::Tick_Calculate(float DeltaTime)
@@ -255,6 +300,14 @@ void AMainCharacter::SetCrouch(bool NewCrouch)
 	OnRep_Crouch();
 }
 
+void AMainCharacter::Interact_Server_Implementation(AActor* InteractActor)
+{
+	if (InteractActor->GetClass()->ImplementsInterface(UIInteract::StaticClass()))
+	{
+		IIInteract::Execute_Interact(InteractActor, this);
+	}
+}
+
 void AMainCharacter::OnRep_Crouch()
 {
 	float height;
@@ -274,6 +327,31 @@ void AMainCharacter::OnRep_Crouch()
 	SkeletalMesh_First->SetRelativeLocation(FVector(0.0f, 0.0f, z_pos));
 }
 
+void AMainCharacter::Box_Interact_BeginOverlap(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult
+)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+	AddInteractActor(OtherActor);
+}
+
+void AMainCharacter::Box_Interact_EndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+	RemoveInteractActor(OtherActor);
+}
+
 FAnimVariable AMainCharacter::GetAnimVariable()
 {
 	FAnimVariable rtn_value;
@@ -284,6 +362,26 @@ FAnimVariable AMainCharacter::GetAnimVariable()
 	rtn_value.Crouch = Rep_Crouch;
 
 	return rtn_value;
+}
+
+bool AMainCharacter::AddInteractActor(AActor* NewActor)
+{
+	if (NewActor && NewActor->GetClass()->ImplementsInterface(UIInteract::StaticClass()))
+	{
+		if (!InteractList.Contains(NewActor))
+		{
+			InteractList.Add(NewActor);
+			MainPlayerWidget->AddActorToInteractList(NewActor);
+			return true;
+		}
+	}
+	return false;
+}
+
+void AMainCharacter::RemoveInteractActor(AActor* Actor)
+{
+	InteractList.Remove(Actor);
+	MainPlayerWidget->RemoveActorFromInteractList(Actor);
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(FUpdateVariable Var)
