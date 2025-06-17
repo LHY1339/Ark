@@ -193,7 +193,7 @@ void AMainCharacter::Init_Value()
 	Limit_Speed->LimitList.Add({600.0f, "Run"});
 	Limit_Speed->LimitList.Add({400.0f, "Jog"});
 
-	PickUpList.Init(nullptr, 4);
+	PickUpList.Init(nullptr, 5);
 	WeaponList.Init(nullptr, 2);
 }
 
@@ -215,6 +215,7 @@ void AMainCharacter::Begin_Widget()
 		MainPlayerWidget = CreateWidget<UUW_MainPlayer>(GetWorld(), MainPlayerWidgetClass);
 		if (MainPlayerWidget)
 		{
+			MainPlayerWidget->SetCharacter(this);
 			MainPlayerWidget->AddToViewport(0);
 		}
 	}
@@ -370,8 +371,12 @@ bool AMainCharacter::AddInteractActor(AActor* NewActor)
 	{
 		if (!InteractList.Contains(NewActor))
 		{
+			IIInteract::Execute_SetWidgetCharacter(NewActor, this);
 			InteractList.Add(NewActor);
-			MainPlayerWidget->AddActorToInteractList(NewActor);
+			if (IIInteract::Execute_GetCanInteract(NewActor, this))
+			{
+				MainPlayerWidget->AddActorToInteractList(NewActor);
+			}
 			return true;
 		}
 	}
@@ -380,8 +385,12 @@ bool AMainCharacter::AddInteractActor(AActor* NewActor)
 
 void AMainCharacter::RemoveInteractActor(AActor* Actor)
 {
-	InteractList.Remove(Actor);
-	MainPlayerWidget->RemoveActorFromInteractList(Actor);
+	if (Actor && Actor->GetClass()->ImplementsInterface(UIInteract::StaticClass()))
+	{
+		IIInteract::Execute_SetWidgetCharacter(Actor, nullptr);
+		InteractList.Remove(Actor);
+		MainPlayerWidget->RemoveActorFromInteractList(Actor);
+	}
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(FUpdateVariable Var)

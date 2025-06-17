@@ -1,7 +1,9 @@
 #include "MainPickUp.h"
 
 #include "Ark/MainPlayer/MainCharacter.h"
+#include "Ark/MainPlayer/Widget/UW_MainPlayer.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 AMainPickUp::AMainPickUp()
@@ -30,6 +32,22 @@ bool AMainPickUp::GetCanInteract_Implementation(AMainCharacter* Character)
 	return CanInteract;
 }
 
+void AMainPickUp::SetWidgetCharacter_Implementation(AMainCharacter* Character)
+{
+	WidgetCharacter = Character;
+}
+
+FPickUpProperty AMainPickUp::GetPickUpProperty_Implementation(AMainCharacter* Character)
+{
+	FPickUpProperty pick_up_prop;
+	pick_up_prop.Texture = Texture;
+	pick_up_prop.Name = Name;
+	pick_up_prop.Description = Description;
+	pick_up_prop.BackColor = BackColor;
+	pick_up_prop.TextColor = TextColor;
+	return pick_up_prop;
+}
+
 void AMainPickUp::Init_Default()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -53,6 +71,10 @@ void AMainPickUp::Init_Component()
 
 bool AMainPickUp::PickUpCond(AMainCharacter* Character, int& Num)
 {
+	if (!CanInteract)
+	{
+		return false;
+	}
 	for (int i = 0; i < Character->PickUpList.Num(); i++)
 	{
 		const AActor* cur_pickup = Character->PickUpList[i];
@@ -67,7 +89,7 @@ bool AMainPickUp::PickUpCond(AMainCharacter* Character, int& Num)
 
 void AMainPickUp::PickUp(AMainCharacter* Character, int Num)
 {
-	CanInteract = false;
+	SetCanInteract(false);
 	SetOwner(Character);
 	Character->PickUpList[Num] = this;
 
@@ -116,5 +138,27 @@ void AMainPickUp::Drop(AMainCharacter* Character, int Num)
 
 	Character->PickUpList[Num] = nullptr;
 	SetOwner(nullptr);
-	CanInteract = true;
+	SetCanInteract(true);
+}
+
+void AMainPickUp::OnRep_CanInteract()
+{
+	if (!WidgetCharacter || !WidgetCharacter->MainPlayerWidget)
+	{
+		return;
+	}
+	if (CanInteract)
+	{
+		WidgetCharacter->MainPlayerWidget->AddActorToInteractList(this);
+	}
+	else
+	{
+		WidgetCharacter->MainPlayerWidget->RemoveActorFromInteractList(this);
+	}
+}
+
+void AMainPickUp::SetCanInteract(bool NewCanInteract)
+{
+	CanInteract = NewCanInteract;
+	OnRep_CanInteract();
 }

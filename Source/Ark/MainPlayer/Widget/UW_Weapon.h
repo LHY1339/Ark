@@ -2,16 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "UW_PickUp.generated.h"
+#include "UW_Weapon.generated.h"
 
 
+class AMainCharacter;
 class UButton;
 class UImage;
 class UTextBlock;
-class AMainCharacter;
 
 UCLASS()
-class ARK_API UUW_PickUp : public UUserWidget
+class ARK_API UUW_Weapon : public UUserWidget
 {
 	GENERATED_BODY()
 

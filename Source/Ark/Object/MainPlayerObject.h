@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,7 +8,7 @@ USTRUCT()
 struct FUpdateVariable
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY()
 	float Speed;
 
@@ -36,13 +35,13 @@ USTRUCT()
 struct FAnimVariable
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY()
 	float Speed;
 
 	UPROPERTY()
 	float AirSpeed;
-	
+
 	UPROPERTY()
 	float Direction;
 
