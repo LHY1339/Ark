@@ -48,20 +48,23 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_CanInteract)
 	bool CanInteract = true;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	UTexture2D* Texture;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	FString Name;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	FString Description;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	FLinearColor BackColor;
 
-	UPROPERTY(EditDefaultsOnly)
-	FLinearColor TextColor;
+	UPROPERTY(EditAnywhere)
+	FLinearColor NameColor;
+
+	UPROPERTY(EditAnywhere)
+	FLinearColor DescriptionColor;
 
 	UPROPERTY()
 	AMainCharacter* WidgetCharacter;

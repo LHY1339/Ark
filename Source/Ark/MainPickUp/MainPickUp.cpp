@@ -44,7 +44,8 @@ FPickUpProperty AMainPickUp::GetPickUpProperty_Implementation(AMainCharacter* Ch
 	pick_up_prop.Name = Name;
 	pick_up_prop.Description = Description;
 	pick_up_prop.BackColor = BackColor;
-	pick_up_prop.TextColor = TextColor;
+	pick_up_prop.NameColor = NameColor;
+	pick_up_prop.DescriptionColor = DescriptionColor;
 	return pick_up_prop;
 }
 

@@ -17,7 +17,9 @@ public class Ark : ModuleRules
 			"UMG",
 			"Networking",
 			"OnlineSubsystemUtils",
-			"Sockets"
+			"Sockets",
+			"Slate",
+			"SlateCore",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

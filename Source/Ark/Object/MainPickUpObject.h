@@ -22,6 +22,9 @@ struct FPickUpProperty
 	FLinearColor BackColor;
 
 	UPROPERTY()
-	FLinearColor TextColor;
+	FLinearColor NameColor;
+
+	UPROPERTY()
+	FLinearColor DescriptionColor;
 };
 

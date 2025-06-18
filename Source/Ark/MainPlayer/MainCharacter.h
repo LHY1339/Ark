@@ -5,6 +5,7 @@
 #include "Ark/Object/MainPlayerObject.h"
 #include "MainCharacter.generated.h"
 
+class AMainPlayerController;
 class UBoxComponent;
 class UUW_MainPlayer;
 class ULimitComponent;
@@ -42,6 +43,8 @@ public:
 
 	bool AddInteractActor(AActor* NewActor);
 	void RemoveInteractActor(AActor* Actor);
+
+	void OnPawnLeavingGame(AMainPlayerController* PlayerController);
 
 private:
 	//Init

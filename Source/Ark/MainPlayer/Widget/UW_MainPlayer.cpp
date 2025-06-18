@@ -7,6 +7,7 @@
 #include "UW_Weapon.h"
 #include "Components/ScrollBox.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Widgets/Text/ISlateEditableTextWidget.h"
 
 void UUW_MainPlayer::AddActorToInteractList(AActor* NewActor)
 {
@@ -14,6 +15,7 @@ void UUW_MainPlayer::AddActorToInteractList(AActor* NewActor)
 	if (interact_inst)
 	{
 		interact_inst->InteractActor = NewActor;
+		interact_inst->SetCharacter(OwningCharacter);
 		ScrollBox_Interact->AddChild(interact_inst);
 	}
 }

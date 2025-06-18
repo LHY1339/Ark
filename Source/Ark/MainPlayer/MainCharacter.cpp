@@ -393,6 +393,11 @@ void AMainCharacter::RemoveInteractActor(AActor* Actor)
 	}
 }
 
+void AMainCharacter::OnPawnLeavingGame(AMainPlayerController* PlayerController)
+{
+	
+}
+
 void AMainCharacter::UpdateVariable_Server_Implementation(FUpdateVariable Var)
 {
 	Rep_Speed = Var.Speed;

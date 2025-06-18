@@ -9,5 +9,7 @@ UCLASS()
 class ARK_API AMainPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
+public:
+	virtual void PawnLeavingGame() override;
 };
